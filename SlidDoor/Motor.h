@@ -27,16 +27,13 @@ private:
 	double _setpoint;
 	CurrSens _currSens;
 	PID _pid;
-	double _kp;
-	double _ki;
-	double _kd;
 	void clockwise(int);
 	void counterClockwise(int);
 
 public:
 	Motor(double*, int, int, int, double, double, double);
 	void Setup();
-	void Open();
+	void Open(int);
 	void Close();
 	void Stop();
 	void Learn();

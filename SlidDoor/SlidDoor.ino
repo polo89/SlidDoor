@@ -5,20 +5,27 @@
 	by Frank Bruhn
 */
 
-#define STATE_UNKNOWN 0
-#define STATE_CLOSED 1;
-#define STATE_OPEN 2;
-
 #include "Motor.h"
 #include "Pins_SlidDoor.h"
 
+enum STATES
+{
+	STATE_UNKNOWN,
+	STATE_CLOSED,
+	STATE_CLOSING,
+	STATE_OPEN,
+	STATE_OPENING,
+};
+
 double position = 0; //rising = clockwise
-double out = 0;
-double set = 100;
-byte currentState = 0;
-byte nextState = 0;
-byte lastState = 0;
-Motor SlidDoor = Motor(&position, MOTOR_PWM, MOTOR_DIR, MOTOR_CURR, 0.1, 0.02, 0);
+byte currentState;
+byte nextState;
+Motor SlidDoor = Motor(&position, MOTOR_PWM, MOTOR_DIR, MOTOR_CURR, 0.5, 0.1, 0);
+
+//Timings
+unsigned long lastStateChangeTime;
+
+bool debug = true;
 
 void setup() {
 	Serial.begin(14400);
@@ -26,19 +33,61 @@ void setup() {
 	pinMode(MOTOR_ENC1, INPUT);
 	pinMode(MOTOR_ENC2, INPUT);
 	attachInterrupt(digitalPinToInterrupt(MOTOR_ENC1), Encoder, RISING);
+
+	lastStateChangeTime = millis();
+	currentState = STATE_CLOSED;
+	nextState = STATE_CLOSED;
 }
 
 
 void loop() {
-	SlidDoor.Compute();
-	//SlidDoor.Open();
-	Serial.println();
+	//SlidDoor.Compute();
 
-	switch (switch_on)
+	switch (currentState)
 	{
+	case STATE_OPEN: {
+		SlidDoor.Stop();
+		if (millis() - lastStateChangeTime > 1000)
+		{
+			nextState = STATE_CLOSING;
+		}
+	} break;
+	case STATE_OPENING: {
+		if (position <= 1000)
+		{
+			SlidDoor.Open(1000);
+		}
+		else
+		{
+			nextState = STATE_OPEN;
+		}
+	} break;
+	case STATE_CLOSED: {
+		SlidDoor.Stop();
+		if (!digitalRead(BUTTON_OPEN))
+		{
+			nextState = STATE_OPENING;
+		}
+	} break;
+	case STATE_CLOSING: {
+		if (position >= 0)
+		{
+			SlidDoor.Close();
+		}
+		else
+		{
+			nextState = STATE_CLOSED;
+		}
+	} break;
 	default:
 		break;
 	}
+
+	if (currentState != nextState) {	
+		currentState = nextState;
+		lastStateChangeTime = millis();
+	}
+	if (debug) Serial.println();
 }
 
 void Encoder() {

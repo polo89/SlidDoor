@@ -10,9 +10,6 @@ Motor::Motor(double *position,
 	_currSens(pin_currSens),
 	_pid(position, &_output, &_setpoint, kp, ki, kd, DIRECT)
 {
-	_kp = kp;
-	_ki = ki;
-	_kd = kd;
 	_position = position;
 	_pin_pwm = pin_pwm;
 	_pin_dir = pin_dir;
@@ -21,10 +18,10 @@ Motor::Motor(double *position,
 
 void Motor::Setup() {
 	_pid.SetMode(AUTOMATIC);
-	_setpoint = 100;
-	_pid.SetOutputLimits(0.0, 255.0);
-	//pinMode(_pin_pwm, OUTPUT);
-	//pinMode(_pin_dir, OUTPUT);
+	_setpoint = 0;
+	_pid.SetOutputLimits(50.0, 255.0);
+	pinMode(_pin_pwm, OUTPUT);
+	pinMode(_pin_dir, OUTPUT);
 }
 
 void Motor::Compute() {
@@ -45,17 +42,25 @@ void Motor::Learn() {
 
 }
 
-void Motor::Open() {
-	_setpoint = 1000;
+void Motor::Open(int setpoint) {
+	_pid.SetMode(AUTOMATIC);
+	_pid.SetControllerDirection(DIRECT);
+	_pid.Compute();
+	_setpoint = setpoint;
 	clockwise(_output);
 }
 
 void Motor::Close() {
-	_setpoint = 1000;
+	_pid.SetMode(AUTOMATIC);
+	_pid.SetControllerDirection(REVERSE);
+	_pid.Compute();
+	_setpoint = 0;
 	counterClockwise(_output);
 }
 
 void Motor::Stop() {
+	_pid.SetMode(MANUAL);
+	_output = 0;
 	digitalWrite(_pin_dir, LOW);
 	analogWrite(_pin_pwm, 0);
 }
