@@ -27,15 +27,20 @@ private:
 	double _setpoint;
 	CurrSens _currSens;
 	PID _pid;
-	void clockwise(int pwm);
-	void counterClockwise(int pwm);
+	double _kp;
+	double _ki;
+	double _kd;
+	void clockwise(int);
+	void counterClockwise(int);
 
 public:
-	Motor(double *position, int pin_pwm, int pin_dir, int pin_currSens, double kp, double ki, double kd);
+	Motor(double*, int, int, int, double, double, double);
 	void Setup();
 	void Open();
 	void Close();
+	void Stop();
 	void Learn();
+	void Compute();
 	byte GetState();
 };
 
