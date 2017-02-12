@@ -14,7 +14,7 @@ DoorLock::DoorLock(int pin_LockState, int pin_LockTrigger, int pin_LockDir) : Lo
 }
 
 void DoorLock::Lock() {
-	if (GetState() != LOCKED)
+	if (GetState() == UNLOCKED)
 	{
 		digitalWrite(_pinLockDir, LOW);
 		delay(20);
@@ -26,7 +26,7 @@ void DoorLock::Lock() {
 }
 
 void DoorLock::Unlock() {
-	if (GetState() != UNLOCKED)
+	if (GetState() == LOCKED)
 	{
 		digitalWrite(_pinLockDir, HIGH);
 		delay(20);

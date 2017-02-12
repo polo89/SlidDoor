@@ -1,10 +1,11 @@
 /*
 	Statemachine SlidDoor
 
-	modified 04 Feb 2017
+	modified 12 Feb 2017
 	by Frank Bruhn
 */
 
+#include <EEPROM.h>
 #include "DoorLock.h"
 #include <Button.h>
 #include "Motor.h"
@@ -52,18 +53,21 @@ void setup() {
 	currentState = STATE_LOCKED;
 	nextState = STATE_LOCKED;
 
-	if (Lock.GetState() != LOCKED)
+	double eeOpenPosition;
+	EEPROM.get(0, eeOpenPosition);
+	if (Lock.GetState() != LOCKED || eeOpenPosition == 0)
 	{
 		if (!SlidDoor.Learn()) {
 			Serial.println("Lernen nicht erfolgreich!");
 			while (true);
 		};
+		EEPROM.put(0, SlidDoor.OpenPosition);
 		currentState = STATE_CLOSED;
 		nextState = STATE_CLOSED;
 	}
 	else
 	{
-		SlidDoor.OpenPosition = 2000;
+		SlidDoor.OpenPosition = eeOpenPosition;
 	}
 	enterStateTime = millis();
 
