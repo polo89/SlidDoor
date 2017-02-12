@@ -43,7 +43,6 @@ bool Motor::Learn() {
 		{
 			Stop();
 			OpenPosition = *_position;
-			Serial.println(*_position);
 			break;
 		}
 	}
@@ -57,12 +56,11 @@ bool Motor::Learn() {
 			Stop();
 			if (*_position > 10) return false;
 			OpenPosition = abs(OpenPosition - *_position);
-			Serial.println(*_position);
 			break;
 		}
 	}
 	*_position = 0;
-	Serial.print("Öffnungsweg: ");
+	Serial.print("Oeffnungsweg: ");
 	Serial.println(OpenPosition);
 	return true;
 }

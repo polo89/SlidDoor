@@ -87,12 +87,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CurrSens.h" />
+    <ClInclude Include="DoorLock.h" />
     <ClInclude Include="Pins_SlidDoor.h" />
     <ClInclude Include="Motor.h" />
     <ClInclude Include="__vm\.SlidDoor.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CurrSens.cpp" />
+    <ClCompile Include="DoorLock.cpp" />
     <ClCompile Include="Motor.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
