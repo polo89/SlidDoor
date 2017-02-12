@@ -11,11 +11,13 @@ class CurrSens
 {
 private:
 	int _pin;
-	const int _offset = 2500; // mV (ACS712T)
-	const int _mVperA = 185; // mV/A (ACS712T)
+	int _sampleRate;
+	double _offset = 2500.0; // mV (ACS712T)
+	const double _mVperA = 185.0; // mV/A (ACS712T)
 public:
-	CurrSens(int pin);
+	CurrSens(int pin, int sampleRate);
 	double Read();
+	void Calibrate();
 };
 
 #endif

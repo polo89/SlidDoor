@@ -32,11 +32,12 @@ private:
 
 public:
 	Motor(double*, int, int, int, double, double, double);
+	double OpenPosition;
 	void Setup();
 	void Open(int);
 	void Close();
 	void Stop();
-	void Learn();
+	bool Learn();
 	void Compute();
 	byte GetState();
 };

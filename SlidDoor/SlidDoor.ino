@@ -5,6 +5,7 @@
 	by Frank Bruhn
 */
 
+#include <Button.h>
 #include "Motor.h"
 #include "Pins_SlidDoor.h"
 
@@ -20,42 +21,49 @@ enum STATES
 double position = 0; //rising = clockwise
 byte currentState;
 byte nextState;
-Motor SlidDoor = Motor(&position, MOTOR_PWM, MOTOR_DIR, MOTOR_CURR, 0.5, 0.1, 0);
+Motor SlidDoor = Motor(&position, PIN_MOTOR_PWM, PIN_MOTOR_DIR, PIN_MOTOR_CURR, 0.3, 0, 0);
+Button ButtonOpen = Button(PIN_BUTTON_OPEN, PULLUP);
+Button RadarIndoor = Button(PIN_RADAR_INDOOR, PULLUP);
+Button RadarOutdoor = Button(PIN_RADAR_OUTDOOR, PULLUP);
+Button LockState = Button(PIN_LOCK_STATE, PULLUP);
+Button ButtonLock = Button(PIN_BUTTON_LOCK, PULLUP);
 
 //Timings
-unsigned long lastStateChangeTime;
+unsigned long enterStateTime;
 
 bool debug = true;
 
 void setup() {
 	Serial.begin(14400);
-	SlidDoor.Setup();
-	pinMode(MOTOR_ENC1, INPUT);
-	pinMode(MOTOR_ENC2, INPUT);
-	attachInterrupt(digitalPinToInterrupt(MOTOR_ENC1), Encoder, RISING);
+	pinMode(PIN_MOTOR_ENC1, INPUT);
+	pinMode(PIN_MOTOR_ENC2, INPUT);
+	attachInterrupt(digitalPinToInterrupt(PIN_MOTOR_ENC1), Encoder, RISING);
 
-	lastStateChangeTime = millis();
+	SlidDoor.Setup();
+	if (!SlidDoor.Learn()) {
+		Serial.println("Lernen nicht erfolgreich!");
+		while (true);
+	};
+	enterStateTime = millis();
 	currentState = STATE_CLOSED;
 	nextState = STATE_CLOSED;
 }
 
 
 void loop() {
-	//SlidDoor.Compute();
-
 	switch (currentState)
 	{
 	case STATE_OPEN: {
 		SlidDoor.Stop();
-		if (millis() - lastStateChangeTime > 1000)
+		if (millis() - enterStateTime > 1000)
 		{
 			nextState = STATE_CLOSING;
 		}
 	} break;
 	case STATE_OPENING: {
-		if (position <= 1000)
+		if (position <= SlidDoor.OpenPosition)
 		{
-			SlidDoor.Open(1000);
+			SlidDoor.Open(SlidDoor.OpenPosition);
 		}
 		else
 		{
@@ -64,7 +72,7 @@ void loop() {
 	} break;
 	case STATE_CLOSED: {
 		SlidDoor.Stop();
-		if (!digitalRead(BUTTON_OPEN))
+		if (millis() - enterStateTime > 500 && ButtonOpen.isPressed())
 		{
 			nextState = STATE_OPENING;
 		}
@@ -85,12 +93,13 @@ void loop() {
 
 	if (currentState != nextState) {	
 		currentState = nextState;
-		lastStateChangeTime = millis();
+		enterStateTime = millis();
 	}
-	if (debug) Serial.println();
+	//if (debug) Serial.println();
+	SlidDoor.Compute();
 }
 
 void Encoder() {
-	if (digitalRead(MOTOR_ENC2)) position += 1.0; //CW
+	if (digitalRead(PIN_MOTOR_ENC2)) position += 1.0; //CW
 	else position -= 1.0; //CCW
 }
