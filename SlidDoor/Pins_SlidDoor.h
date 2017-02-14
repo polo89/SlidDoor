@@ -21,6 +21,10 @@
 #define PIN_BUTTON_OPEN 20
 #define PIN_BUTTON_LOCK 21
 #define PIN_THRUBEAM_DETECT 24
+#define PIN_MODE1 37
+#define PIN_MODE2 38
+#define PIN_MODE3 39
+#define PIN_LED 40
 
 #endif
 

@@ -66,20 +66,20 @@ bool Motor::Learn() {
 }
 
 void Motor::Open(int setpoint) {
+	_setpoint = setpoint;
 	_pid.SetMode(AUTOMATIC);
 	_pid.SetControllerDirection(DIRECT);
 	_pid.Compute();
 	OpenPosition;
-	_setpoint = setpoint;
 	_currSens.Read();
 	clockwise(_output);
 }
 
 void Motor::Close() {
+	_setpoint = 0;
 	_pid.SetMode(AUTOMATIC);
 	_pid.SetControllerDirection(REVERSE);
 	_pid.Compute();
-	_setpoint = 0;
 	counterClockwise(_output);
 }
 

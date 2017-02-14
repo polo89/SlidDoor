@@ -5,6 +5,7 @@
 	by Frank Bruhn
 */
 
+#include "Selector.h"
 #include <EEPROM.h>
 #include "DoorLock.h"
 #include <Button.h>
@@ -20,12 +21,14 @@ enum STATES
 	STATE_OPENING,
 	STATE_OBSTACLE,
 	STATE_LOCKED,
-	STATE_UNLOCK
+	STATE_UNLOCK,
+	STATE_LEARN
 };
 
 double position = 0; //rising = clockwise
 byte currentState;
 byte nextState;
+byte ActivMode;
 Motor SlidDoor = Motor(&position, PIN_MOTOR_PWM, PIN_MOTOR_DIR, PIN_MOTOR_CURR, 0.3, 0, 0);
 Button ButtonOpen = Button(PIN_BUTTON_OPEN, PULLUP);
 Button RadarIndoor = Button(PIN_RADAR_INDOOR, PULLUP);
@@ -33,6 +36,7 @@ Button RadarOutdoor = Button(PIN_RADAR_OUTDOOR, PULLUP);
 Button LockState = Button(PIN_LOCK_STATE, PULLUP);
 Button ButtonLock = Button(PIN_BUTTON_LOCK, PULLUP);
 DoorLock Lock = DoorLock(PIN_LOCK_STATE, PIN_LOCK_TRIGGER, PIN_LOCK_DIR);
+Selector Remote = Selector(PIN_MODE1, PIN_MODE2, PIN_MODE3, PIN_LED);
 
 //Timings
 unsigned long enterStateTime;
@@ -75,20 +79,25 @@ void setup() {
 
 
 void loop() {
+	byte mode = Remote.GetMode();
+
 	switch (currentState)
 	{
 	case STATE_OPEN: {
 		SlidDoor.Stop();
 		if (RadarIndoor.isPressed() || ButtonOpen.isPressed()) enterStateTime = millis();
-		if (millis() - enterStateTime > 1000)
+		if (millis() - enterStateTime > 1000 && mode != MODE_OPEN)
 		{
 			nextState = STATE_CLOSING;
 		}
 	} break;
 	case STATE_OPENING: {
-		if (position <= SlidDoor.OpenPosition)
+		if (position <= SlidDoor.OpenPosition && ActivMode != MODE_WINTER)
 		{
 			SlidDoor.Open(SlidDoor.OpenPosition);
+		}
+		else if (position <= SlidDoor.OpenPosition/2) {
+			SlidDoor.Open(SlidDoor.OpenPosition / 2);
 		}
 		else
 		{
@@ -97,7 +106,7 @@ void loop() {
 	} break;
 	case STATE_CLOSED: {
 		SlidDoor.Stop();
-		if (millis() - enterStateTime > 500 && (ButtonOpen.isPressed() || RadarIndoor.isPressed()))
+		if (millis() - enterStateTime > 500 && (ButtonOpen.isPressed() || RadarIndoor.isPressed() || mode == MODE_OPEN))
 		{
 			nextState = STATE_OPENING;
 		}
@@ -127,6 +136,19 @@ void loop() {
 			nextState = STATE_OPENING;
 			Lock.Unlock();
 			while (ButtonLock.isPressed());
+			delay(500);
+		};
+	} break;
+	case STATE_LEARN: {
+		SlidDoor.Stop();
+		if (millis() - enterStateTime > 1000) {
+			if (!SlidDoor.Learn()) {
+				Serial.println("Lernen nicht erfolgreich!");
+				while (true) {
+					SlidDoor.Stop();
+				};
+			};
+			nextState = STATE_CLOSED;
 		};
 	} break;
 	default:
@@ -157,10 +179,40 @@ void loop() {
 		if (nextState == STATE_UNLOCK)		Serial.print("STATE_UNLOCK  ");
 		if (nextState == STATE_UNKNOWN)		Serial.print("STATE_UNKNOWN ");
 
-		Serial.println();
-
 		currentState = nextState;
 		enterStateTime = millis();
+
+		ActivMode = mode;
+
+		Serial.print(" | ");
+
+		if (ActivMode == MODE_UNKNOWN)	Serial.print("MODE_UNKOWN");
+		if (ActivMode == MODE_MANUAL)	Serial.print("MODE_MANUAL");
+		if (ActivMode == MODE_OPEN)		Serial.print("MODE_OPEN  ");
+		if (ActivMode == MODE_SUMMER)	Serial.print("MODE_SUMMER");
+		if (ActivMode == MODE_WINTER)	Serial.print("MODE_WINTER");
+		if (ActivMode == MODE_ONEWAY)	Serial.print("MODE_ONEWAY");
+		if (ActivMode == MODE_LOCK)		Serial.print("MODE_LOCK  ");
+		if (ActivMode == MODE_LEARN)	Serial.print("MODE_LEARN ");
+
+		Serial.print(" | ");
+
+		Serial.print(position);
+
+		Serial.println();
+	}
+
+	if (Remote.ModeChange())
+	{
+		if (mode == MODE_UNKNOWN)	Serial.print("MODE_UNKOWN");
+		if (mode == MODE_MANUAL)	Serial.print("MODE_MANUAL");
+		if (mode == MODE_OPEN)		Serial.print("MODE_OPEN  ");
+		if (mode == MODE_SUMMER)	Serial.print("MODE_SUMMER");
+		if (mode == MODE_WINTER)	Serial.print("MODE_WINTER");
+		if (mode == MODE_ONEWAY)	Serial.print("MODE_ONEWAY");
+		if (mode == MODE_LOCK)		Serial.print("MODE_LOCK  ");
+		if (mode == MODE_LEARN)		Serial.print("MODE_LEARN ");
+		Serial.println();
 	}
 }
 

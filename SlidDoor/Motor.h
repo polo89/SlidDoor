@@ -33,6 +33,7 @@ private:
 public:
 	Motor(double*, int, int, int, double, double, double);
 	double OpenPosition;
+	double WinterPosition = OpenPosition / 2;
 	void Setup();
 	void Open(int);
 	void Close();
