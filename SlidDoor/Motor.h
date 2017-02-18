@@ -25,6 +25,8 @@ private:
 	int _pin_currSens;
 	double _output;
 	double _setpoint;
+	unsigned long _lastCalcSpeedTime;
+	double _lastCalcSpeedPosition;
 	CurrSens _currSens;
 	PID _pid;
 	void clockwise(int);
@@ -41,6 +43,7 @@ public:
 	bool Learn();
 	void Compute();
 	byte GetState();
+	double calcSpeed();
 };
 
 #endif

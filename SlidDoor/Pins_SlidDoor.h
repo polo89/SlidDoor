@@ -25,6 +25,7 @@
 #define PIN_MODE2 38
 #define PIN_MODE3 39
 #define PIN_LED 40
+#define PIN_BUZZER 50
 
 #endif
 

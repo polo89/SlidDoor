@@ -18,11 +18,15 @@ void DoorLock::Lock() {
 	{
 		digitalWrite(_pinLockDir, LOW);
 		delay(20);
-		while (GetState() != LOCKED) {
-			digitalWrite(_pinLockTrigger, HIGH);		}
+		digitalWrite(_pinLockTrigger, HIGH);
+		delay(20);
+		digitalWrite(_pinLockTrigger, LOW);
 	}
-	digitalWrite(_pinLockTrigger, LOW);
-	digitalWrite(_pinLockDir, LOW);
+	else
+	{
+		digitalWrite(_pinLockTrigger, LOW);
+		digitalWrite(_pinLockDir, LOW);
+	}
 }
 
 void DoorLock::Unlock() {
@@ -30,12 +34,17 @@ void DoorLock::Unlock() {
 	{
 		digitalWrite(_pinLockDir, HIGH);
 		delay(20);
-		while (GetState() != UNLOCKED) {
-			digitalWrite(_pinLockTrigger, HIGH);
-		}
+		digitalWrite(_pinLockTrigger, HIGH);
+		delay(20);
+		digitalWrite(_pinLockTrigger, LOW);
+		delay(20);
+		digitalWrite(_pinLockDir, LOW);
 	}
-	digitalWrite(_pinLockTrigger, LOW);
-	digitalWrite(_pinLockDir, LOW);
+	else
+	{
+		digitalWrite(_pinLockTrigger, LOW);
+		digitalWrite(_pinLockDir, LOW);
+	}
 }
 
 LockStates DoorLock::GetState() {

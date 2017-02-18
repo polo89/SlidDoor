@@ -14,6 +14,7 @@ Motor::Motor(double *position,
 	_pin_pwm = pin_pwm;
 	_pin_dir = pin_dir;
 	_pin_currSens = pin_currSens;
+	_lastCalcSpeedPosition = *_position;
 }
 
 void Motor::Setup() {
@@ -99,5 +100,15 @@ void Motor::clockwise(int pwm) {
 	digitalWrite(_pin_dir, HIGH);
 	pwm = abs(pwm - 255);
 	analogWrite(_pin_pwm, pwm);
+}
+
+double Motor::calcSpeed() {
+	if (abs(*_position - _lastCalcSpeedPosition) > 50)
+	{
+		double _speed = ((*_position - _lastCalcSpeedPosition) / 1909.0) / ((millis() - _lastCalcSpeedTime) / 100000.0);
+		_lastCalcSpeedTime = millis();
+		_lastCalcSpeedPosition = *_position;
+		return _speed;
+	}
 }
 

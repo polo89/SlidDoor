@@ -1,16 +1,18 @@
 /*
 	Statemachine SlidDoor
 
-	modified 12 Feb 2017
+	modified 18 Feb 2017
 	by Frank Bruhn
 */
 
+//#include "Buzzer.h"
 #include "Selector.h"
 #include <EEPROM.h>
 #include "DoorLock.h"
 #include <Button.h>
 #include "Motor.h"
 #include "Pins_SlidDoor.h"
+
 
 enum STATES
 {
@@ -22,7 +24,8 @@ enum STATES
 	STATE_OBSTACLE,
 	STATE_LOCKED,
 	STATE_UNLOCK,
-	STATE_LEARN
+	STATE_LEARN,
+	STATE_MANUAL
 };
 
 double position = 0; //rising = clockwise
@@ -40,11 +43,16 @@ Selector Remote = Selector(PIN_MODE1, PIN_MODE2, PIN_MODE3, PIN_LED);
 
 //Timings
 unsigned long enterStateTime;
+unsigned long lastUnlockTime;
 
 //Request
 bool lockStateRequest = false;
 
+bool enterState = true;
+bool learn = false;
+
 bool debug = true;
+bool printLine = false;
 
 void setup() {
 	Serial.begin(14400);
@@ -90,6 +98,7 @@ void loop() {
 		{
 			nextState = STATE_CLOSING;
 		}
+		if (mode == MODE_MANUAL) nextState = STATE_MANUAL;
 	} break;
 	case STATE_OPENING: {
 		if (position <= SlidDoor.OpenPosition && ActivMode != MODE_WINTER)
@@ -110,6 +119,8 @@ void loop() {
 		{
 			nextState = STATE_OPENING;
 		}
+		if (mode == MODE_MANUAL) nextState = STATE_MANUAL;
+		if (mode == MODE_LEARN && learn) nextState = STATE_LEARN;
 		if (lockStateRequest || ButtonLock.isPressed()) nextState = STATE_LOCKED;
 	} break;
 	case STATE_CLOSING: {
@@ -137,25 +148,48 @@ void loop() {
 			Lock.Unlock();
 			while (ButtonLock.isPressed());
 			delay(500);
+			lastUnlockTime = millis();
 		};
 	} break;
 	case STATE_LEARN: {
 		SlidDoor.Stop();
-		if (millis() - enterStateTime > 1000) {
+		if (millis() - enterStateTime > 10000 && learn) {
 			if (!SlidDoor.Learn()) {
 				Serial.println("Lernen nicht erfolgreich!");
 				while (true) {
 					SlidDoor.Stop();
 				};
 			};
-			nextState = STATE_CLOSED;
-		};
+			learn = false;
+			EEPROM.put(0, SlidDoor.OpenPosition);
+		}
+		else
+		{
+
+		}
+		if (!learn) {
+			if (mode != MODE_LEARN) nextState = STATE_CLOSED;
+		}
+	} break;
+	case STATE_MANUAL: {
+		SlidDoor.Stop();
+		if (mode == MODE_LEARN) nextState = STATE_LEARN;
+		if (mode == MODE_LOCK) nextState = STATE_OPEN;
+		if (mode == MODE_ONEWAY) nextState = STATE_OPEN;
+		if (mode == MODE_OPEN) nextState = STATE_OPENING;
+		if (mode == MODE_SUMMER) nextState = STATE_OPEN;
+		if (mode == MODE_WINTER) nextState = STATE_OPEN;
+		if (mode == MODE_UNKNOWN) nextState = STATE_MANUAL;
 	} break;
 	default:
+		nextState = STATE_MANUAL;
 		break;
 	}
 
-	if (ButtonLock.isPressed() && (currentState != STATE_LOCKED || currentState != STATE_UNLOCK || currentState != STATE_CLOSED)) lockStateRequest = true;
+	if (ButtonLock.isPressed() && (currentState != STATE_LOCKED || currentState != STATE_UNLOCK || currentState != STATE_CLOSED)) {
+		if (millis() - lastUnlockTime > 2000) lockStateRequest = true;
+		else lockStateRequest = false;
+	}
 
 	if (currentState != nextState) {
 
@@ -167,6 +201,8 @@ void loop() {
 		if (currentState == STATE_OPENING)	Serial.print("STATE_OPENING ");
 		if (currentState == STATE_UNLOCK)	Serial.print("STATE_UNLOCK  ");
 		if (currentState == STATE_UNKNOWN)	Serial.print("STATE_UNKNOWN ");
+		if (currentState == STATE_MANUAL)	Serial.print("STATE_MANUAL  ");
+		if (currentState == STATE_LEARN)	Serial.print("STATE_LEARN   ");
 
 		Serial.print(" => ");
 
@@ -178,9 +214,12 @@ void loop() {
 		if (nextState == STATE_OPENING)		Serial.print("STATE_OPENING ");
 		if (nextState == STATE_UNLOCK)		Serial.print("STATE_UNLOCK  ");
 		if (nextState == STATE_UNKNOWN)		Serial.print("STATE_UNKNOWN ");
+		if (nextState == STATE_MANUAL)		Serial.print("STATE_MANUAL  ");
+		if (nextState == STATE_LEARN)		Serial.print("STATE_LEARN   ");
 
 		currentState = nextState;
 		enterStateTime = millis();
+		enterState = true;
 
 		ActivMode = mode;
 
@@ -199,11 +238,22 @@ void loop() {
 
 		Serial.print(position);
 
+		Serial.print(" | ");
+
+		Serial.print(SlidDoor.calcSpeed());
+
+		Serial.print("cm/s ");
+
 		Serial.println();
 	}
+	else enterState = false;
 
 	if (Remote.ModeChange())
 	{
+		learn = true;
+
+		Serial.print("Mode changed to ");
+
 		if (mode == MODE_UNKNOWN)	Serial.print("MODE_UNKOWN");
 		if (mode == MODE_MANUAL)	Serial.print("MODE_MANUAL");
 		if (mode == MODE_OPEN)		Serial.print("MODE_OPEN  ");
@@ -212,6 +262,7 @@ void loop() {
 		if (mode == MODE_ONEWAY)	Serial.print("MODE_ONEWAY");
 		if (mode == MODE_LOCK)		Serial.print("MODE_LOCK  ");
 		if (mode == MODE_LEARN)		Serial.print("MODE_LEARN ");
+
 		Serial.println();
 	}
 }

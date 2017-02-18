@@ -27,7 +27,7 @@ byte Selector::GetMode() {
 		_nextModeTime = millis();
 		_lastMode = _mode;
 	}
-	if (millis() - _nextModeTime > 3000 && _currentMode != _mode)
+	if (millis() - _nextModeTime > 1000 && _currentMode != _mode)
 	{
 		_currentMode = _mode;
 		_modeChange = true;

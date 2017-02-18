@@ -86,6 +86,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Buzzer.h" />
     <ClInclude Include="CurrSens.h" />
     <ClInclude Include="DoorLock.h" />
     <ClInclude Include="Pins_SlidDoor.h" />
@@ -94,6 +95,7 @@
     <ClInclude Include="__vm\.SlidDoor.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Buzzer.cpp" />
     <ClCompile Include="CurrSens.cpp" />
     <ClCompile Include="DoorLock.cpp" />
     <ClCompile Include="Motor.cpp" />
