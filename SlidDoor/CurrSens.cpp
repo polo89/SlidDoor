@@ -17,13 +17,15 @@ double CurrSens::Read() {
 	double volt = (sample / 1024.0) * 5000; // Gets you mV
 	double diffVolt = volt - _offset;
 	double current = abs(diffVolt / 185.0);
-	/*Serial.print(current);
-	Serial.println("A");*/
 	return current;
 }
 
 void CurrSens::Calibrate() {
+
+#ifdef DEBUG
 	Serial.println("Starte Stromsensor Kalibrierung ...");
+#endif // DEBUG
+
 	double offset = 0;
 	int offsetSampleRate = 1000;
 	delay(100);
@@ -32,7 +34,11 @@ void CurrSens::Calibrate() {
 	}
 	offset = offset / offsetSampleRate;
 	_offset = offset / 1024 * 5000;
+
+#ifdef DEBUG
 	Serial.print("Stromsensor Offset: ");
 	Serial.print(_offset);
 	Serial.println("mV");
+#endif // DEBUG
+
 }

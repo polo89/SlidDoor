@@ -15,6 +15,8 @@ Selector::Selector(int pin_Mode1, int pin_Mode2, int pin_Mode3, int pin_LED)
 	pinMode(_pin_Mode3, INPUT_PULLUP);
 	pinMode(_pin_LED, OUTPUT);
 	_modeChange = true;
+	_lastBlinkTime = 0;
+	_counterBlink = 0;
 }
 
 byte Selector::GetMode() {
@@ -43,5 +45,48 @@ bool Selector::ModeChange() {
 }
 
 void Selector::SetLedState(LEDSTATES state) {
+	switch (state)
+	{
+	case LEDSTATE_NORMAL:
+		analogWrite(_pin_LED, 40);
+		break;
+	case LEDSTATE_NORMAL_LOCKED:
+		analogWrite(_pin_LED, 255);
+		break;
+	case LEDSTATE_LOCK_ERROR:
+		int t_intervall;
+		t_intervall = 250;
+		if (_blink != _lastBlink) {
+			_lastBlink = _blink;
+			_counterBlink++;
+		}
+		if (_counterBlink > 2) t_intervall = 1000;
+		if (_counterBlink > 3) _counterBlink = 0;
+		blink(t_intervall);
+		break;
+	case LEDSTATE_MANUAL_LEARN:
+		blink(1000);
+		break;
+	case LEDSTATE_MOTOR_MCB:
+		blink(150);
+		break;
+	default:
+		break;
+	}
+}
 
+void Selector::blink(int intervall) {
+	if ((millis() - _lastBlinkTime) > intervall)
+	{
+		_lastBlinkTime = millis();
+		if (_blink)
+		{
+			_blink = false;
+			digitalWrite(_pin_LED, HIGH);
+		}
+		else {
+			_blink = true;
+			digitalWrite(_pin_LED, LOW);
+		}
+	}
 }

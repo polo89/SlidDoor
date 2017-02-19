@@ -19,11 +19,11 @@
 #define MODE_LEARN B101
 
 enum LEDSTATES {
-	LEDSTATE_NORMAL,
-	LEDSTATE_NORMAL_LOCKED,
-	LEDSTATE_LOCK_ERROR,
-	LEDSTATE_MANUAL_LEARN,
-	LEDSTATE_MOTOR_MCB
+	LEDSTATE_NORMAL, //leuchtet schwach
+	LEDSTATE_NORMAL_LOCKED, //leuchtet hell
+	LEDSTATE_LOCK_ERROR, //blinkt ungeleichm‰ﬂig
+	LEDSTATE_MANUAL_LEARN, //blinkt gleichm‰ﬂig langsam
+	LEDSTATE_MOTOR_MCB //blinkt gleich‰ﬂig schnell
 };
 
 class Selector
@@ -33,11 +33,16 @@ class Selector
 	 int _pin_Mode2;
 	 int _pin_Mode3;
 	 int _pin_LED;
+	 int _counterBlink;
+	 bool _blink;
+	 bool _lastBlink;
 	 bool _modeChange;
 	 byte _currentMode;
 	 byte _lastMode;
 	 LEDSTATES _currentState;
 	 unsigned long _nextModeTime;
+	 unsigned long _lastBlinkTime;
+	 void blink(int intervall);
 
  public:
 	 Selector(int pin_Mode1, int pin_Mode2, int pin_Mode3, int pin_LED);

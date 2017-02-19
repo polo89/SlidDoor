@@ -39,9 +39,11 @@ public:
 	void Setup();
 	void Open(int);
 	void Close();
+	void Close(int);
 	void Stop();
 	bool Learn();
 	void Compute();
+	bool CheckForObstacle(double maxCurrent);
 	byte GetState();
 	double calcSpeed();
 };

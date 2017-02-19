@@ -77,7 +77,11 @@ void Motor::Open(int setpoint) {
 }
 
 void Motor::Close() {
-	_setpoint = 0;
+	Close(0);
+}
+
+void Motor::Close(int setpoint) {
+	_setpoint = setpoint;
 	_pid.SetMode(AUTOMATIC);
 	_pid.SetControllerDirection(REVERSE);
 	_pid.Compute();
@@ -100,6 +104,11 @@ void Motor::clockwise(int pwm) {
 	digitalWrite(_pin_dir, HIGH);
 	pwm = abs(pwm - 255);
 	analogWrite(_pin_pwm, pwm);
+}
+
+bool Motor::CheckForObstacle(double maxCurrent) {
+	if (_currSens.Read() > maxCurrent) return true;
+	else return false;
 }
 
 double Motor::calcSpeed() {
