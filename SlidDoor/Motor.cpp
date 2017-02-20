@@ -15,6 +15,7 @@ Motor::Motor(double *position,
 	_pin_dir = pin_dir;
 	_pin_currSens = pin_currSens;
 	_lastCalcSpeedPosition = *_position;
+	_state = MOTOR_STOPPED;
 }
 
 void Motor::Setup() {
@@ -26,8 +27,8 @@ void Motor::Setup() {
 	pinMode(_pin_dir, OUTPUT);
 }
 
-byte Motor::GetState() {
-
+MOTOR_STATES Motor::GetState() {
+	return _state;
 }
 
 void Motor::Compute() {
@@ -35,7 +36,9 @@ void Motor::Compute() {
 }
 
 bool Motor::Learn() {
+#ifdef DEBUG
 	Serial.println("Starte Lernmodus ...");
+#endif // DEBUG
 	unsigned long startTime = millis();
 	while (true)
 	{
@@ -61,8 +64,10 @@ bool Motor::Learn() {
 		}
 	}
 	*_position = 0;
+#ifdef DEBUG
 	Serial.print("Oeffnungsweg: ");
 	Serial.println(OpenPosition);
+#endif // DEBUG
 	return true;
 }
 
@@ -89,6 +94,7 @@ void Motor::Close(int setpoint) {
 }
 
 void Motor::Stop() {
+	_state = MOTOR_STOPPED;
 	_pid.SetMode(MANUAL);
 	_output = 0;
 	digitalWrite(_pin_dir, LOW);
@@ -96,11 +102,13 @@ void Motor::Stop() {
 }
 
 void Motor::counterClockwise(int pwm) {
+	_state = MOTOR_CCW;
 	digitalWrite(_pin_dir, LOW);
 	analogWrite(_pin_pwm, pwm);
 }
 
 void Motor::clockwise(int pwm) {
+	_state = MOTOR_CW;
 	digitalWrite(_pin_dir, HIGH);
 	pwm = abs(pwm - 255);
 	analogWrite(_pin_pwm, pwm);

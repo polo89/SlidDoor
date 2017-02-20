@@ -10,11 +10,13 @@
 #include <PID_v1.h>
 #include "CurrSens.h"
 
-#define DOOR_STATE_UNKNOWN 0
-#define DOOR_STATE_OPEN 1
-#define DOOR_STATE_CLOSE 2
-#define DOOR_STATE_BETWEEN 3
-#define DOOR_STATE_ISLEARNING 3
+enum MOTOR_STATES
+{
+	MOTOR_STOPPED,
+	MOTOR_RUNNING,
+	MOTOR_CW,
+	MOTOR_CCW,
+};
 
 class Motor
 {
@@ -27,6 +29,7 @@ private:
 	double _setpoint;
 	unsigned long _lastCalcSpeedTime;
 	double _lastCalcSpeedPosition;
+	MOTOR_STATES _state;
 	CurrSens _currSens;
 	PID _pid;
 	void clockwise(int);
@@ -44,7 +47,7 @@ public:
 	bool Learn();
 	void Compute();
 	bool CheckForObstacle(double maxCurrent);
-	byte GetState();
+	MOTOR_STATES GetState();
 	double calcSpeed();
 };
 
