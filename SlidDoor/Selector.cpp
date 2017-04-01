@@ -10,9 +10,9 @@ Selector::Selector(int pin_Mode1, int pin_Mode2, int pin_Mode3, int pin_LED)
 	_pin_Mode2 = pin_Mode2;
 	_pin_Mode3 = pin_Mode3;
 	_pin_LED = pin_LED;
-	pinMode(_pin_Mode1, INPUT_PULLUP);
-	pinMode(_pin_Mode2, INPUT_PULLUP);
-	pinMode(_pin_Mode3, INPUT_PULLUP);
+	pinMode(_pin_Mode1, INPUT);
+	pinMode(_pin_Mode2, INPUT);
+	pinMode(_pin_Mode3, INPUT);
 	pinMode(_pin_LED, OUTPUT);
 	_modeChange = true;
 	_lastBlinkTime = 0;

@@ -5,7 +5,7 @@
 #include "DoorLock.h"
 #include <Button.h>
 
-DoorLock::DoorLock(int pin_LockState, int pin_LockTrigger, int pin_LockDir) : LockState(pin_LockState, PULLUP)
+DoorLock::DoorLock(int pin_LockState, int pin_LockTrigger, int pin_LockDir) : LockState(pin_LockState, PULLDOWN)
 {
 	_pinLockDir = pin_LockDir;
 	_pinLockTrigger = pin_LockTrigger;

@@ -24,6 +24,7 @@ private:
 	double *_position;
 	int _pin_pwm;
 	int _pin_dir;
+	int _pin_en;
 	int _pin_currSens;
 	double _output;
 	double _setpoint;
@@ -36,7 +37,7 @@ private:
 	void counterClockwise(int);
 
 public:
-	Motor(double*, int, int, int, double, double, double);
+	Motor(double* pos, int pin_pwm, int pin_dir, int pin_en, int pin_currSens, double kp, double ki, double kd);
 	double OpenPosition;
 	double WinterPosition = OpenPosition / 2;
 	void Setup();
