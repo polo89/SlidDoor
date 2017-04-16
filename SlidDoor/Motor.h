@@ -46,7 +46,6 @@ public:
 	void Close(int);
 	void Stop();
 	bool Learn();
-	void Compute();
 	bool CheckForObstacle(double maxCurrent);
 	MOTOR_STATES GetState();
 	double calcSpeed();

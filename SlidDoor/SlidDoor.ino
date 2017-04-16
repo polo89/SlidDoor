@@ -40,7 +40,7 @@ Motor SlidDoor = Motor(&position, PIN_MOTOR_PWM, PIN_MOTOR_DIR, PIN_MOTOR_EN, PI
 Button RadarIndoor = Button(PIN_RADAR_INDOOR);
 Button RadarOutdoor = Button(PIN_RADAR_OUTDOOR);
 Button LockState = Button(PIN_LOCK_STATE);
-Button ButtonLock = Button(PIN_BUTTON_LOCK);
+Button ButtonLock = Button(PIN_BUTTON_LOCK, INPUT_PULLUP);
 DoorLock Lock = DoorLock(PIN_LOCK_STATE, PIN_LOCK_TRIGGER, PIN_LOCK_DIR);
 Selector Remote = Selector(PIN_MODE1, PIN_MODE2, PIN_MODE3, PIN_LED);
 
@@ -59,31 +59,36 @@ bool printLine = false;
 
 void setup() {
 	Serial.begin(14400);
+
 	pinMode(PIN_MOTOR_ENC1, INPUT);
 	pinMode(PIN_MOTOR_ENC2, INPUT);
 	attachInterrupt(digitalPinToInterrupt(PIN_MOTOR_ENC2), Encoder, RISING);
 
 	SlidDoor.Setup();
 
-	//while (true) {
-	//	Serial.print("[Current ");
-	//	Serial.print(analogRead(PIN_MOTOR_CURR));
-	//	Serial.print("][Position ");
-	//	Serial.print(position);
-	//	Serial.print("][RadarIndoor ");
-	//	Serial.print(digitalRead(PIN_RADAR_INDOOR));
-	//	Serial.print("][LockFB ");
-	//	Serial.print(digitalRead(PIN_LOCK_STATE));
-	//	Serial.print("][ButtonLock ");
-	//	Serial.print(digitalRead(PIN_LOCK_STATE));
-	//	Serial.print("][Thrubeam ");
-	//	Serial.print(digitalRead(PIN_THRUBEAM_DETECT));
-	//	Serial.print("][Mode ");
-	//	Serial.print(digitalRead(PIN_MODE1));
-	//	Serial.print(digitalRead(PIN_MODE2));
-	//	Serial.print(digitalRead(PIN_MODE3));
-	//	Serial.println("]");
-	//}
+	/*while (true) {
+		Serial.print("[Current ");
+		Serial.print(analogRead(PIN_MOTOR_CURR));
+		Serial.print("][Position ");
+		Serial.print(position);
+		Serial.print("][RadarIndoor ");
+		Serial.print(digitalRead(PIN_RADAR_INDOOR));
+		Serial.print("][RadarOutdoor ");
+		Serial.print(digitalRead(PIN_RADAR_OUTDOOR));
+		Serial.print("][LockFB ");
+		Serial.print(digitalRead(PIN_LOCK_STATE));
+		Serial.print("][ButtonLock ");
+		Serial.print(digitalRead(PIN_BUTTON_LOCK));
+		Serial.print("][Thrubeam ");
+		Serial.print(digitalRead(PIN_THRUBEAM));
+		Serial.print("][EMERGENCYSTOP ");
+		Serial.print(digitalRead(PIN_EMERGENCYSTOP));
+		Serial.print("][Mode ");
+		Serial.print(digitalRead(PIN_MODE1));
+		Serial.print(digitalRead(PIN_MODE2));
+		Serial.print(digitalRead(PIN_MODE3));
+		Serial.println("]");
+	}*/
 
 	currentState = STATE_LOCKED;
 	nextState = STATE_LOCKED;
@@ -91,23 +96,30 @@ void setup() {
 	SlidDoor.Stop();
 	double eeOpenPosition;
 	EEPROM.get(0, eeOpenPosition);
-	if (Lock.GetState() != LOCKED || eeOpenPosition == 0)
-	{
-		if (!SlidDoor.Learn()) {
-			Serial.println("Lernen nicht erfolgreich!");
-			while (true);
-		};
-		EEPROM.put(0, SlidDoor.OpenPosition);
-		currentState = STATE_CLOSED;
-		nextState = STATE_CLOSED;
-		lastState = STATE_CLOSED;
-	}
-	else
-	{
-		SlidDoor.OpenPosition = eeOpenPosition;
-	}
+	//if (Lock.GetState() != LOCKED || eeOpenPosition == 0)
+	//{
+	//	Remote.SetLedState(LEDSTATE_MANUAL_LEARN);
+	//	if (!SlidDoor.Learn()) {
+	//		Serial.println("Lernen nicht erfolgreich!");
+	//		while (true);
+	//	};
+	//	EEPROM.put(0, SlidDoor.OpenPosition);
+	//	currentState = STATE_CLOSED;
+	//	nextState = STATE_CLOSED;
+	//	lastState = STATE_CLOSED;
+	//}
+	//else
+	//{
+	//	SlidDoor.OpenPosition = eeOpenPosition;
+	//}
+	SlidDoor.OpenPosition = 2000;
 	SlidDoor.Stop();
 	enterStateTime = millis();
+
+#ifdef DEBUG
+	Serial.println("Setup Finished!");
+#endif // DEBUG
+
 }
 
 
@@ -153,7 +165,7 @@ void loop() {
 	} break;
 	case STATE_CLOSING: {
 		Remote.SetLedState(LEDSTATE_NORMAL);
-		if (obstaclePosition != -1) {
+		if (obstaclePosition != -1 && false) {
 			SlidDoor.Close(obstaclePosition - 100);
 			if (position <= (obstaclePosition - 200)) {
 				obstaclePosition = -1;
@@ -163,7 +175,7 @@ void loop() {
 		else if (position >= 5) SlidDoor.Close();
 		else nextState = STATE_CLOSED;
 		if (!RadarIndoor.isPressed()) nextState = STATE_OBSTACLE;
-		if (SlidDoor.CheckForObstacle(1.0) && (millis() - enterStateTime) > 200) {
+		if (SlidDoor.CheckForObstacle(1.5) && (millis() - enterStateTime) > 200) {
 			obstaclePosition = position;
 			nextState = STATE_OBSTACLE;
 		}
@@ -186,7 +198,7 @@ void loop() {
 	case STATE_UNLOCK: {
 		Remote.SetLedState(LEDSTATE_NORMAL_LOCKED);
 		SlidDoor.Stop();
-		if (millis() - enterStateTime > 400) { //&& ButtonLock.isPressed()
+		if (millis() - enterStateTime > 400 && ButtonLock.isPressed()) {
 			nextState = STATE_CLOSED;
 			Lock.Unlock();
 			while (ButtonLock.isPressed());

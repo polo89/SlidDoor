@@ -48,7 +48,7 @@ void DoorLock::Unlock() {
 }
 
 LockStates DoorLock::GetState() {
-	if (LockState.isPressed()) return UNLOCKED;
-	else return LOCKED;
+	if (LockState.isPressed()) return LOCKED;
+	else return UNLOCKED;
 }
 

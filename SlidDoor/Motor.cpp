@@ -1,4 +1,5 @@
 #include "Motor.h"
+#define DEBUG 1
 
 Motor::Motor(double *position,
 	int pin_pwm, int pin_dir, int pin_en,
@@ -24,26 +25,22 @@ void Motor::Setup() {
 	_pid.SetMode(AUTOMATIC);
 	_setpoint = 0;
 	_pid.SetOutputLimits(50.0, 255.0);
+	pinMode(_pin_en, OUTPUT);
 	pinMode(_pin_pwm, OUTPUT);
 	pinMode(_pin_dir, OUTPUT);
-	pinMode(_pin_en, OUTPUT);
 }
 
 MOTOR_STATES Motor::GetState() {
 	return _state;
 }
 
-void Motor::Compute() {
-	//Serial.println(*_position);
-}
-
 bool Motor::Learn() {
-	Serial.println("Starte Lernmodus ...");
+	
 	unsigned long startTime = millis();
 	while (true)
 	{
 		clockwise(60);
-		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
+		if ((_currSens.Read() > 0.6) && (startTime + 100 < millis()))
 		{
 			Stop();
 			OpenPosition = *_position;
@@ -54,8 +51,8 @@ bool Motor::Learn() {
 	startTime = millis();
 	while (true)
 	{
-		counterClockwise(60);
-		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
+		counterClockwise(255);
+		if ((_currSens.Read() > 1.2) && (startTime + 100 < millis()))
 		{
 			Stop();
 			if (*_position > 10) return false;
@@ -97,8 +94,8 @@ void Motor::Stop() {
 	_state = MOTOR_STOPPED;
 	_pid.SetMode(MANUAL);
 	_output = 0;
+	digitalWrite(_pin_en, LOW);
 	digitalWrite(_pin_dir, LOW);
-	digitalWrite(_pin_en, HIGH);
 	analogWrite(_pin_pwm, 0);
 }
 
