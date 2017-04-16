@@ -21,10 +21,11 @@ Motor::Motor(double *position,
 }
 
 void Motor::Setup() {
+	Timer1.initialize(50);
 	_currSens.Calibrate();
 	_pid.SetMode(AUTOMATIC);
 	_setpoint = 0;
-	_pid.SetOutputLimits(50.0, 255.0);
+	_pid.SetOutputLimits(200.0, 1023.0);
 	pinMode(_pin_en, OUTPUT);
 	pinMode(_pin_pwm, OUTPUT);
 	pinMode(_pin_dir, OUTPUT);
@@ -39,8 +40,8 @@ bool Motor::Learn() {
 	unsigned long startTime = millis();
 	while (true)
 	{
-		clockwise(60);
-		if ((_currSens.Read() > 0.6) && (startTime + 100 < millis()))
+		clockwise(240);
+		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
 		{
 			Stop();
 			OpenPosition = *_position;
@@ -51,8 +52,8 @@ bool Motor::Learn() {
 	startTime = millis();
 	while (true)
 	{
-		counterClockwise(255);
-		if ((_currSens.Read() > 1.2) && (startTime + 100 < millis()))
+		counterClockwise(240);
+		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
 		{
 			Stop();
 			if (*_position > 10) return false;
@@ -103,15 +104,15 @@ void Motor::clockwise(int pwm) {
 	_state = MOTOR_CW;
 	digitalWrite(_pin_en, HIGH);
 	digitalWrite(_pin_dir, LOW);
-	analogWrite(_pin_pwm, pwm);
+	Timer1.pwm(_pin_pwm, pwm);
 }
 
 void Motor::counterClockwise(int pwm) {
 	_state = MOTOR_CCW;
 	digitalWrite(_pin_en, HIGH);
 	digitalWrite(_pin_dir, HIGH);
-	pwm = abs(pwm - 255);
-	analogWrite(_pin_pwm, pwm);
+	pwm = abs(pwm - 1023);
+	Timer1.pwm(_pin_pwm, pwm);
 }
 
 bool Motor::CheckForObstacle(double maxCurrent) {

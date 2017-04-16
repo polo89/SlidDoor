@@ -36,9 +36,11 @@ byte currentState;
 byte nextState;
 byte lastState;
 byte ActivMode;
+byte mode;
 Motor SlidDoor = Motor(&position, PIN_MOTOR_PWM, PIN_MOTOR_DIR, PIN_MOTOR_EN, PIN_MOTOR_CURR, 0.3, 0, 0);
 Button RadarIndoor = Button(PIN_RADAR_INDOOR);
 Button RadarOutdoor = Button(PIN_RADAR_OUTDOOR);
+Button Thrubeam = Button(PIN_THRUBEAM);
 Button LockState = Button(PIN_LOCK_STATE);
 Button ButtonLock = Button(PIN_BUTTON_LOCK, INPUT_PULLUP);
 DoorLock Lock = DoorLock(PIN_LOCK_STATE, PIN_LOCK_TRIGGER, PIN_LOCK_DIR);
@@ -96,22 +98,16 @@ void setup() {
 	SlidDoor.Stop();
 	double eeOpenPosition;
 	EEPROM.get(0, eeOpenPosition);
-	//if (Lock.GetState() != LOCKED || eeOpenPosition == 0)
-	//{
-	//	Remote.SetLedState(LEDSTATE_MANUAL_LEARN);
-	//	if (!SlidDoor.Learn()) {
-	//		Serial.println("Lernen nicht erfolgreich!");
-	//		while (true);
-	//	};
-	//	EEPROM.put(0, SlidDoor.OpenPosition);
-	//	currentState = STATE_CLOSED;
-	//	nextState = STATE_CLOSED;
-	//	lastState = STATE_CLOSED;
-	//}
-	//else
-	//{
-	//	SlidDoor.OpenPosition = eeOpenPosition;
-	//}
+	if (Lock.GetState() != LOCKED || eeOpenPosition == 0)
+	{
+		currentState = STATE_LEARN;
+		nextState = STATE_LEARN;
+		learn = true;
+	}
+	else
+	{
+		SlidDoor.OpenPosition = eeOpenPosition;
+	}
 	SlidDoor.OpenPosition = 2000;
 	SlidDoor.Stop();
 	enterStateTime = millis();
@@ -124,14 +120,14 @@ void setup() {
 
 
 void loop() {
-	byte mode = Remote.GetMode();
+	mode = Remote.GetMode();
 
 	switch (currentState)
 	{
 	case STATE_OPEN: {
 		Remote.SetLedState(LEDSTATE_NORMAL);
 		SlidDoor.Stop();
-		if (!RadarIndoor.isPressed()) enterStateTime = millis();
+		if (!RadarIndoor.isPressed() || !Thrubeam.isPressed()) enterStateTime = millis();
 		if ((millis() - enterStateTime) > 1000 && (mode != MODE_OPEN || lockStateRequest))
 		{
 			nextState = STATE_CLOSING;
@@ -174,7 +170,7 @@ void loop() {
 		}
 		else if (position >= 5) SlidDoor.Close();
 		else nextState = STATE_CLOSED;
-		if (!RadarIndoor.isPressed()) nextState = STATE_OBSTACLE;
+		if (!RadarIndoor.isPressed() || !Thrubeam.isPressed()) nextState = STATE_OBSTACLE;
 		if (SlidDoor.CheckForObstacle(1.5) && (millis() - enterStateTime) > 200) {
 			obstaclePosition = position;
 			nextState = STATE_OBSTACLE;
@@ -209,7 +205,7 @@ void loop() {
 	case STATE_LEARN: {
 		Remote.SetLedState(LEDSTATE_MANUAL_LEARN);
 		SlidDoor.Stop();
-		if (millis() - enterStateTime > 10000 && learn) {
+		if (millis() - enterStateTime > 10000 || learn) {
 			if (!SlidDoor.Learn()) {
 #ifdef DEBUG
 				Serial.println("Lernen nicht erfolgreich!");
@@ -316,7 +312,6 @@ void loop() {
 #ifdef DEBUG
 	if (Remote.ModeChange())
 	{
-		learn = true;
 
 		Serial.print("Mode changed to ");
 

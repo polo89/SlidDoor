@@ -9,6 +9,7 @@
 
 #include <PID_v1.h>
 #include "CurrSens.h"
+#include <TimerOne.h>
 
 enum MOTOR_STATES
 {
