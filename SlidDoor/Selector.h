@@ -37,6 +37,7 @@ class Selector
 	 bool _blink;
 	 bool _lastBlink;
 	 bool _modeChange;
+	 bool _init;
 	 byte _currentMode;
 	 byte _lastMode;
 	 LEDSTATES _currentState;

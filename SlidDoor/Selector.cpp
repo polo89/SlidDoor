@@ -14,9 +14,10 @@ Selector::Selector(int pin_Mode1, int pin_Mode2, int pin_Mode3, int pin_LED)
 	pinMode(_pin_Mode2, INPUT);
 	pinMode(_pin_Mode3, INPUT);
 	pinMode(_pin_LED, OUTPUT);
-	_modeChange = true;
+	_modeChange = false;
 	_lastBlinkTime = 0;
 	_counterBlink = 0;
+	_init = true;
 }
 
 byte Selector::GetMode() {
@@ -24,6 +25,13 @@ byte Selector::GetMode() {
 	bool mode2 = digitalRead(_pin_Mode2);
 	bool mode3 = digitalRead(_pin_Mode3);
 	byte _mode = mode1*pow(2, 2) + mode2*pow(2, 1) + mode3*pow(2, 0);
+	if (_mode == MODE_UNKNOWN) return _currentMode;
+	if (_init)
+	{
+		_lastMode = _mode;
+		_currentMode = _mode;
+		_init = false;
+	}
 	if (_mode != _lastMode)
 	{
 		_nextModeTime = millis();

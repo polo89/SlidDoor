@@ -40,7 +40,7 @@ bool Motor::Learn() {
 	unsigned long startTime = millis();
 	while (true)
 	{
-		clockwise(240);
+		clockwise(300);
 		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
 		{
 			Stop();
@@ -52,7 +52,7 @@ bool Motor::Learn() {
 	startTime = millis();
 	while (true)
 	{
-		counterClockwise(240);
+		counterClockwise(300);
 		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
 		{
 			Stop();
