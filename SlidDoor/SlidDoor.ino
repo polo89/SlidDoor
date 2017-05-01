@@ -6,10 +6,11 @@
 */
 
 //#include "Buzzer.h"
+#include <Button.h>
 #include "Selector.h"
 #include <EEPROM.h>
 #include "DoorLock.h"
-#include <Button.h>
+#include <Button\Button.h>
 #include "Motor.h"
 #include "Pins_SlidDoor.h"
 
@@ -35,12 +36,12 @@ byte nextState;
 byte lastState;
 byte ActivMode;
 byte mode;
-Motor SlidDoor = Motor(&position, PIN_MOTOR_PWM, PIN_MOTOR_DIR, PIN_MOTOR_EN, PIN_MOTOR_CURR, 1.2, 0, 0);
+Motor SlidDoor = Motor(&position, PIN_MOTOR_PWM, PIN_MOTOR_DIR, PIN_MOTOR_EN, PIN_MOTOR_CURR, 1.2, 0, 0); //TimerOne 1.2
 Button RadarIndoor = Button(PIN_RADAR_INDOOR);
 Button RadarOutdoor = Button(PIN_RADAR_OUTDOOR);
 Button Thrubeam = Button(PIN_THRUBEAM);
 Button LockState = Button(PIN_LOCK_STATE);
-Button ButtonLock = Button(PIN_BUTTON_LOCK, INPUT_PULLUP);
+Button ButtonLock = Button(PIN_BUTTON_LOCK);
 Button EmergencyStop = Button(PIN_EMERGENCYSTOP);
 Button Reed_Close = Button(PIN_REED_CLOSE);
 DoorLock Lock = DoorLock(PIN_LOCK_STATE, PIN_LOCK_TRIGGER, PIN_LOCK_DIR);
@@ -54,22 +55,25 @@ unsigned long lastUnlockTime;
 bool lockStateRequest = false;
 
 bool enterState = true;
-bool learn = false;
+bool forceLearn = false;
+bool finishedLearn = false;
 
 bool debug = true;
 bool printLine = false;
 
 void setup() {
-#ifndef __AVR_ATmega328P__
+//#ifndef __AVR_ATmega328P__
+//	#define DEBUG
+//	Serial.begin(115200);
+//#endif // __AVR_ATmega328P__
+
 	#define DEBUG
-	Serial.begin(14400);
-#endif // __AVR_ATmega328P__
+	Serial.begin(9600);
 
 	pinMode(PIN_MOTOR_ENC1, INPUT);
 	pinMode(PIN_MOTOR_ENC2, INPUT);
 	attachInterrupt(digitalPinToInterrupt(PIN_MOTOR_ENC2), Encoder, RISING);
 
-	pinMode(PIN_BRAKE, OUTPUT);
 	SlidDoor.Setup();
 
 	currentState = STATE_LOCKED;
@@ -82,7 +86,7 @@ void setup() {
 	{
 		currentState = STATE_LEARN;
 		nextState = STATE_LEARN;
-		learn = true;
+		forceLearn = true;
 	}
 	else
 	{
@@ -94,48 +98,61 @@ void setup() {
 		}
 		else
 		{
-			switch (Remote.GetMode())
-			{
-			case MODE_LEARN:
-				currentState = STATE_LEARN;
-				nextState = STATE_LEARN;
-				break;
-			case MODE_LOCK:
-				currentState = STATE_LOCKED;
-				nextState = STATE_LOCKED;
-				break;
-			case MODE_MANUAL:
-				currentState = STATE_MANUAL;
-				nextState = STATE_MANUAL;
-				break;
-			case MODE_ONEWAY:
-				currentState = STATE_CLOSED;
-				nextState = STATE_CLOSED;
-				break;
-			case MODE_OPEN:
-				currentState = STATE_CLOSED;
-				nextState = STATE_CLOSED;
-				break;
-			case MODE_SUMMER:
-				currentState = STATE_LOCKED;
-				nextState = STATE_LOCKED;
-				break;
-			case MODE_WINTER:
-				currentState = STATE_CLOSED;
-				nextState = STATE_CLOSED;
-				break;
-			default:
-				currentState = STATE_CLOSED;
-				nextState = STATE_CLOSED;
-				break;
-			}
+			currentState = STATE_CLOSED;
+			nextState = STATE_CLOSED;
 		}
 	}
 	SlidDoor.Stop();
 	enterStateTime = millis();
 #ifdef DEBUG
 	Serial.println("Setup Finished!");
+	if (currentState == STATE_CLOSED)	Serial.print("STATE_CLOSED   ");
+	if (currentState == STATE_CLOSING)	Serial.print("STATE_CLOSING  ");
+	if (currentState == STATE_LOCKED)	Serial.print("STATE_LOCKED   ");
+	if (currentState == STATE_OBSTACLE) Serial.print("STATE_OBSTACLE ");
+	if (currentState == STATE_OPEN)		Serial.print("STATE_OPEN     ");
+	if (currentState == STATE_OPENING)	Serial.print("STATE_OPENING  ");
+	if (currentState == STATE_UNLOCK)	Serial.print("STATE_UNLOCK   ");
+	if (currentState == STATE_UNKNOWN)	Serial.print("STATE_UNKNOWN  ");
+	if (currentState == STATE_MANUAL)	Serial.print("STATE_MANUAL   ");
+	if (currentState == STATE_LEARN)	Serial.print("STATE_LEARN    ");
+	if (currentState == STATE_LOCKERROR)Serial.print("STATE_LOCKERROR");
 #endif // DEBUG
+
+#pragma region TestSensors
+	//while (1) {
+	//	Serial.print("Position: ");
+	//	Serial.print(position);
+	//	Serial.print("\t");
+	//	Serial.print("MotorCurr: ");
+	//	Serial.print(analogRead(PIN_MOTOR_CURR));
+	//	Serial.print("\t");
+	//	Serial.print("RadarIndoor: ");
+	//	Serial.print(digitalRead(PIN_RADAR_INDOOR));
+	//	Serial.print("\t");
+	//	Serial.print("RadarOutdoor: ");
+	//	Serial.print(digitalRead(PIN_RADAR_OUTDOOR));
+	//	Serial.print("\t");
+	//	Serial.print("Thrubeam: ");
+	//	Serial.print(digitalRead(PIN_THRUBEAM));
+	//	Serial.print("\t");
+	//	Serial.print("LockState: ");
+	//	Serial.print(digitalRead(PIN_LOCK_STATE));
+	//	Serial.print("\t");
+	//	Serial.print("ButtonLock: ");
+	//	Serial.print(digitalRead(PIN_BUTTON_LOCK));
+	//	Serial.print("\t");
+	//	Serial.print("EStop: ");
+	//	Serial.print(digitalRead(PIN_EMERGENCYSTOP));
+	//	Serial.print("\t");
+	//	Serial.print("ReedClose: ");
+	//	Serial.print(digitalRead(PIN_REED_CLOSE));
+	//	Serial.print("\t");
+	//	Serial.print("Remote: ");
+	//	Serial.print(Remote.GetMode());
+	//	Serial.println();
+	//}
+#pragma endregion
 
 }
 
@@ -147,17 +164,9 @@ void loop() {
 	while (EmergencyStop.isPressed())
 	{
 		SlidDoor.Stop();
-		if (!Thrubeam.isPressed())
-		{
-			digitalWrite(PIN_LED, HIGH);
-		}
-		else
-		{
-			digitalWrite(PIN_LED, LOW);
-		}
-		//Remote.SetLedState(LEDSTATE_MOTOR_MCB);
+		Remote.SetLedState(LEDSTATE_MOTOR_MCB);
 	}
-#pragma endregion
+#pragma endregion                             
 
 	switch (currentState)
 	{
@@ -223,7 +232,10 @@ void loop() {
 		SlidDoor.Stop();
 		Lock.Lock();
 		lockStateRequest = false;
-		if (ButtonLock.isPressed()) break;
+		if (ButtonLock.isPressed()) {
+			Serial.println("Button pressed!");
+			break;
+		}
 		if (millis() - enterStateTime > 400) {
 			nextState = STATE_UNLOCK;
 		};
@@ -233,16 +245,17 @@ void loop() {
 		SlidDoor.Stop();
 		if (millis() - enterStateTime > 400 && (ButtonLock.isPressed() || (Remote.ModeChange() && mode != MODE_LOCK))) {
 			Lock.Unlock();
-			if (ButtonLock.isPressed()) break;
 			delay(500);
 			nextState = STATE_CLOSED;
 			lastUnlockTime = millis();
 		};
 	} break;
 	case STATE_LEARN: {
-		Remote.SetLedState(LEDSTATE_MANUAL_LEARN);
+		if (finishedLearn) Remote.SetLedState(LEDSTATE_NORMAL);
+		else Remote.SetLedState(LEDSTATE_MANUAL_LEARN);
+		
 		SlidDoor.Stop();
-		if (millis() - enterStateTime > 10000 && learn) {
+		if ((millis() - enterStateTime > 3000 || forceLearn) && !finishedLearn) {
 			if (!SlidDoor.Learn()) {
 #ifdef DEBUG
 				Serial.println("Lernen nicht erfolgreich!");
@@ -251,15 +264,13 @@ void loop() {
 					SlidDoor.Stop();
 				};
 			};
-			learn = false;
+			forceLearn = false;
+			finishedLearn = true;
 			EEPROM.put(0, SlidDoor.OpenPosition);
 		}
-		else
+		else if (mode != MODE_LEARN && finishedLearn)
 		{
-			if (mode != MODE_LEARN) nextState = STATE_CLOSED;
-		}
-		if (!learn) {
-			if (mode != MODE_LEARN) nextState = STATE_CLOSED;
+			nextState = STATE_CLOSED;
 		}
 	} break;
 	case STATE_MANUAL: {
@@ -343,7 +354,6 @@ void loop() {
 		Serial.print("cm/s ");
 		Serial.println();
 #endif // DEBUG
-		learn = true;
 		lastState = currentState;
 		currentState = nextState;
 		enterStateTime = millis();

@@ -25,7 +25,7 @@ void Motor::Setup() {
 	_currSens.Calibrate();
 	_pid.SetMode(AUTOMATIC);
 	_setpoint = 0;
-	_pid.SetOutputLimits(200.0, 1023.0);
+	_pid.SetOutputLimits(200, 1023); //TimerOne 200 1023
 	pinMode(_pin_en, OUTPUT);
 	pinMode(_pin_pwm, OUTPUT);
 	pinMode(_pin_dir, OUTPUT);
@@ -40,7 +40,7 @@ bool Motor::Learn() {
 	unsigned long startTime = millis();
 	while (true)
 	{
-		clockwise(300);
+		clockwise(300); //TimerOne 300
 		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
 		{
 			Stop();
@@ -52,7 +52,7 @@ bool Motor::Learn() {
 	startTime = millis();
 	while (true)
 	{
-		counterClockwise(300);
+		counterClockwise(300); //TimerOne 300
 		if ((_currSens.Read() > 0.4) && (startTime + 100 < millis()))
 		{
 			Stop();
@@ -97,7 +97,8 @@ void Motor::Stop() {
 	_output = 0;
 	digitalWrite(_pin_en, LOW);
 	digitalWrite(_pin_dir, LOW);
-	analogWrite(_pin_pwm, 0);
+	Timer1.pwm(_pin_pwm, 0);
+	//analogWrite(_pin_pwm, 0);
 }
 
 void Motor::clockwise(int pwm) {
@@ -105,6 +106,7 @@ void Motor::clockwise(int pwm) {
 	digitalWrite(_pin_en, HIGH);
 	digitalWrite(_pin_dir, LOW);
 	Timer1.pwm(_pin_pwm, pwm);
+	//analogWrite(_pin_pwm, pwm);
 }
 
 void Motor::counterClockwise(int pwm) {
@@ -113,6 +115,7 @@ void Motor::counterClockwise(int pwm) {
 	digitalWrite(_pin_dir, HIGH);
 	pwm = abs(pwm - 1023);
 	Timer1.pwm(_pin_pwm, pwm);
+	//analogWrite(_pin_pwm, pwm);
 }
 
 bool Motor::CheckForObstacle(double maxCurrent) {
